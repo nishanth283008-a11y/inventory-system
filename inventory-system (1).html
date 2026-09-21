@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Stockroom — Inventory Ledger</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=Archivo+Narrow:wght@500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F1EFE8;
+    --paper-raised: #FAF9F5;
+    --ink: #23291F;
+    --ink-soft: #5B6156;
+    --rule: #C9C3B4;
+    --rule-strong: #A69F8C;
+    --teal: #2F6F62;
+    --teal-deep: #234F45;
+    --amber: #C1801F;
+    --amber-bg: #F6E7CC;
+    --rust: #A8452D;
+    --rust-bg: #F3DCD4;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #1B1E19;
+      --paper-raised: #24281F;
+      --ink: #EDEAE0;
+      --ink-soft: #A5A895;
+      --rule: #3C4136;
+      --rule-strong: #565C4C;
+      --teal: #6FBFAA;
+      --teal-deep: #8FD4C0;
+      --amber: #E0A94A;
+      --amber-bg: #3A3020;
+      --rust: #E28468;
+      --rust-bg: #3F2620;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #1B1E19;
+    --paper-raised: #24281F;
+    --ink: #EDEAE0;
+    --ink-soft: #A5A895;
+    --rule: #3C4136;
+    --rule-strong: #565C4C;
+    --teal: #6FBFAA;
+    --teal-deep: #8FD4C0;
+    --amber: #E0A94A;
+    --amber-bg: #3A3020;
+    --rust: #E28468;
+    --rust-bg: #3F2620;
+  }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+  * { box-sizing: border-box; }
+  html, body {
+    height: 100%;
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Archivo', system-ui, sans-serif;
+  }
+  ::selection { background: var(--amber-bg); color: var(--ink); }
+
+  .app {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 28px 24px 60px;
+  }
+
+  /* Masthead */
+  .masthead {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    border-bottom: 2px solid var(--ink);
+    padding-bottom: 14px;
+    margin-bottom: 6px;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+  .masthead h1 {
+    font-family: 'Archivo Narrow', sans-serif;
+    font-weight: 700;
+    font-size: 34px;
+    letter-spacing: -0.01em;
+    margin: 0;
+    line-height: 1;
+  }
+  .masthead .sub {
+    font-size: 13px;
+    color: var(--ink-soft);
+    margin-top: 6px;
+  }
+  .masthead-right {
+    display: flex;
+    gap: 22px;
+    align-items: flex-end;
+  }
+  .stat { text-align: right; }
+  .stat .num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 22px;
+    font-weight: 600;
+    line-height: 1;
+  }
+  .stat .num.warn { color: var(--rust); }
+  .stat .label {
+    font-size: 11px;
+    color: var(--ink-soft);
+    margin-top: 3px;
+  }
+
+  .toolbar {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--rule);
+    flex-wrap: wrap;
+  }
+  .toolbar input[type="search"] {
+    flex: 1;
+    min-width: 180px;
+    padding: 9px 12px;
+    border: 1px solid var(--rule-strong);
+    background: var(--paper-raised);
+    color: var(--ink);
+    font-family: inherit;
+    font-size: 14px;
+    border-radius: 3px;
+  }
+  select {
+    padding: 9px 10px;
+    border: 1px solid var(--rule-strong);
+    background: var(--paper-raised);
+    color: var(--ink);
+    font-family: inherit;
+    font-size: 13px;
+    border-radius: 3px;
+  }
+  .btn {
+    padding: 9px 16px;
+    border: 1px solid var(--ink);
+    background: var(--ink);
+    color: var(--paper);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 3px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .btn:hover { opacity: 0.85; }
+  .btn.ghost {
+    background: transparent;
+    color: var(--ink);
+    border-color: var(--rule-strong);
+  }
+  .btn.ghost:hover { border-color: var(--ink); opacity: 1; }
+  .btn:focus-visible, input:focus-visible, select:focus-visible, .icon-btn:focus-visible {
+    outline: 2px solid var(--teal);
+    outline-offset: 1px;
+  }
+
+  .filter-chips {
+    display: flex;
+    gap: 6px;
+    padding: 12px 0 4px;
+    flex-wrap: wrap;
+  }
+  .chip {
+    font-size: 12px;
+    padding: 5px 11px;
+    border: 1px solid var(--rule-strong);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--ink-soft);
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .chip.active {
+    background: var(--ink);
+    color: var(--paper);
+    border-color: var(--ink);
+  }
+
+  /* Table */
+  .ledger {
+    margin-top: 10px;
+    width: 100%;
+    overflow-x: auto;
+  }
+  table { width: 100%; border-collapse: collapse; min-width: 720px; }
+  thead th {
+    text-align: left;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--ink-soft);
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--rule-strong);
+    position: sticky;
+    top: 0;
+    background: var(--paper);
+  }
+  th.num, td.num { text-align: right; }
+  tbody tr { border-bottom: 1px solid var(--rule); }
+  tbody tr:hover { background: var(--paper-raised); }
+  td { padding: 11px 10px; font-size: 14px; vertical-align: middle; }
+  td.name { font-weight: 600; }
+  td .sku {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-soft);
+    display: block;
+    margin-top: 2px;
+  }
+  td.num { font-family: 'JetBrains Mono', monospace; font-size: 14px; }
+  .cat-tag {
+    font-size: 11px;
+    padding: 3px 9px;
+    border-radius: 999px;
+    background: var(--paper-raised);
+    border: 1px solid var(--rule);
+    color: var(--ink-soft);
+    white-space: nowrap;
+  }
+  .status-dot {
+    display: inline-block;
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    margin-right: 6px;
+    vertical-align: middle;
+  }
+  .status-dot.ok { background: var(--teal); }
+  .status-dot.low { background: var(--amber); }
+  .status-dot.out { background: var(--rust); }
+  tr.low-row td.qty { color: var(--amber); font-weight: 600; }
+  tr.out-row td.qty { color: var(--rust); font-weight: 600; }
+
+  .qty-cell { display: flex; align-items: center; gap: 6px; justify-content: flex-end; }
+  .stepper {
+    width: 24px; height: 24px;
+    border: 1px solid var(--rule-strong);
+    background: var(--paper-raised);
+    color: var(--ink);
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .stepper:hover { border-color: var(--ink); }
+  .qty-val { min-width: 34px; text-align: right; }
+
+  .row-actions { display: flex; gap: 6px; justify-content: flex-end; }
+  .icon-btn {
+    background: none;
+    border: none;
+    color: var(--ink-soft);
+    cursor: pointer;
+    font-size: 13px;
+    padding: 4px 6px;
+    border-radius: 3px;
+    font-family: inherit;
+  }
+  .icon-btn:hover { color: var(--ink); background: var(--paper-raised); }
+  .icon-btn.danger:hover { color: var(--rust); }
+
+  .empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--ink-soft);
+  }
+  .empty .big { font-size: 15px; color: var(--ink); margin-bottom: 6px; font-weight: 600; }
+
+  /* Modal */
+  .overlay {
+    position: fixed; inset: 0;
+    background: rgba(20, 22, 17, 0.45);
+    display: none;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 40px 16px;
+    z-index: 20;
+    overflow-y: auto;
+  }
+  .overlay.open { display: flex; }
+  .modal {
+    background: var(--paper-raised);
+    border: 1px solid var(--rule-strong);
+    border-radius: 6px;
+    width: 100%;
+    max-width: 440px;
+    padding: 22px;
+  }
+  .modal h2 {
+    font-family: 'Archivo Narrow', sans-serif;
+    font-size: 19px;
+    margin: 0 0 16px;
+  }
+  .field { margin-bottom: 13px; }
+  .field label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--ink-soft);
+    margin-bottom: 5px;
+  }
+  .field input, .field select {
+    width: 100%;
+    padding: 9px 10px;
+    border: 1px solid var(--rule-strong);
+    background: var(--paper);
+    color: var(--ink);
+    font-family: inherit;
+    font-size: 14px;
+    border-radius: 3px;
+  }
+  .field-row { display: flex; gap: 10px; }
+  .field-row .field { flex: 1; }
+  .modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 18px;
+  }
+  .err {
+    font-size: 12px;
+    color: var(--rust);
+    margin-top: 8px;
+    min-height: 14px;
+  }
+
+  .toast {
+    position: fixed;
+    bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+    left: 50%;
+    transform: translateX(-50%) translateY(10px);
+    background: var(--ink);
+    color: var(--paper);
+    padding: 10px 18px;
+    border-radius: 4px;
+    font-size: 13px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    z-index: 30;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  @media (max-width: 600px) {
+    .masthead { align-items: flex-start; }
+    .masthead h1 { font-size: 26px; }
+    .masthead-right { gap: 14px; }
+    .stat .num { font-size: 17px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="masthead">
+    <div>
+      <h1>Stockroom</h1>
+      <div class="sub">Inventory ledger — updated as you go, kept on this device</div>
+    </div>
+    <div class="masthead-right">
+      <div class="stat">
+        <div class="num" id="statTotal">0</div>
+        <div class="label">SKUs tracked</div>
+      </div>
+      <div class="stat">
+        <div class="num warn" id="statLow">0</div>
+        <div class="label">Low / out of stock</div>
+      </div>
+      <div class="stat">
+        <div class="num" id="statValue">$0</div>
+        <div class="label">Total stock value</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <input type="search" id="searchInput" placeholder="Search by name or SKU…" aria-label="Search inventory">
+    <select id="categoryFilter" aria-label="Filter by category">
+      <option value="">All categories</option>
+    </select>
+    <select id="sortSelect" aria-label="Sort by">
+      <option value="name">Sort: Name A–Z</option>
+      <option value="qty-asc">Sort: Quantity, low first</option>
+      <option value="qty-desc">Sort: Quantity, high first</option>
+      <option value="value-desc">Sort: Value, high first</option>
+    </select>
+    <button class="btn" id="addBtn">+ Add item</button>
+  </div>
+
+  <div class="filter-chips" id="statusChips">
+    <button class="chip active" data-status="">All</button>
+    <button class="chip" data-status="ok">In stock</button>
+    <button class="chip" data-status="low">Low stock</button>
+    <button class="chip" data-status="out">Out of stock</button>
+  </div>
+
+  <div class="ledger">
+    <table>
+      <thead>
+        <tr>
+          <th>Item</th>
+          <th>Category</th>
+          <th class="num">Unit price</th>
+          <th class="num">Qty on hand</th>
+          <th class="num">Reorder at</th>
+          <th class="num">Line value</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+    <div class="empty" id="emptyState" style="display:none;">
+      <div class="big">No items match here</div>
+      <div>Add your first item, or clear the current search and filters.</div>
+    </div>
+  </div>
+
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <h2 id="modalTitle">Add item</h2>
+    <form id="itemForm">
+      <div class="field">
+        <label for="fName">Item name</label>
+        <input id="fName" type="text" required maxlength="80" placeholder="e.g. Packing tape, 48mm">
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="fSku">SKU</label>
+          <input id="fSku" type="text" required maxlength="30" placeholder="e.g. TAPE-48">
+        </div>
+        <div class="field">
+          <label for="fCategory">Category</label>
+          <input id="fCategory" type="text" required maxlength="30" list="categorySuggestions" placeholder="e.g. Packaging">
+          <datalist id="categorySuggestions"></datalist>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="fQty">Quantity on hand</label>
+          <input id="fQty" type="number" required min="0" step="1" value="0">
+        </div>
+        <div class="field">
+          <label for="fReorder">Reorder threshold</label>
+          <input id="fReorder" type="number" required min="0" step="1" value="5">
+        </div>
+      </div>
+      <div class="field">
+        <label for="fPrice">Unit price ($)</label>
+        <input id="fPrice" type="number" required min="0" step="0.01" value="0.00">
+      </div>
+      <div class="err" id="formErr"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn ghost" id="cancelBtn">Cancel</button>
+        <button type="submit" class="btn" id="saveBtn">Save item</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function() {
+  'use strict';
+
+  var STORAGE_KEY = 'stockroom_inventory_v1';
+  var items = [];
+  var editingId = null;
+  var activeStatus = '';
+
+  var seedData = [
+    { id: 'i1', name: 'Packing tape, 48mm', sku: 'TAPE-48', category: 'Packaging', qty: 34, reorder: 15, price: 3.25 },
+    { id: 'i2', name: 'Corrugated boxes, medium', sku: 'BOX-MED', category: 'Packaging', qty: 6, reorder: 20, price: 1.10 },
+    { id: 'i3', name: 'Bubble wrap roll', sku: 'WRAP-BUB', category: 'Packaging', qty: 0, reorder: 5, price: 9.75 },
+    { id: 'i4', name: 'Thermal shipping labels', sku: 'LBL-THM', category: 'Shipping', qty: 210, reorder: 50, price: 0.06 },
+    { id: 'i5', name: 'Nitrile gloves, box of 100', sku: 'GLV-NIT', category: 'Safety', qty: 12, reorder: 10, price: 8.40 },
+    { id: 'i6', name: 'Hand truck, 400lb', sku: 'CART-400', category: 'Equipment', qty: 3, reorder: 1, price: 65.00 }
+  ];
+
+  function loadItems() {
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        items = JSON.parse(raw);
+        return;
+      }
+    } catch (e) {
+      console.error('Could not read saved inventory', e);
+    }
+    items = seedData.slice();
+    saveItems();
+  }
+
+  function saveItems() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+    } catch (e) {
+      console.error('Could not save inventory', e);
+      showToast('Could not save — storage may be full');
+    }
+  }
+
+  function uid() {
+    return 'i' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  }
+
+  function money(n) {
+    return '$' + n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  function statusOf(item) {
+    if (item.qty <= 0) return 'out';
+    if (item.qty <= item.reorder) return 'low';
+    return 'ok';
+  }
+
+  function showToast(msg) {
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(showToast._timer);
+    showToast._timer = setTimeout(function() { t.classList.remove('show'); }, 2200);
+  }
+
+  function refreshCategoryOptions() {
+    var cats = Array.from(new Set(items.map(function(i) { return i.category; }))).sort();
+    var sel = document.getElementById('categoryFilter');
+    var current = sel.value;
+    sel.innerHTML = '<option value="">All categories</option>' +
+      cats.map(function(c) { return '<option value="' + escapeHtml(c) + '">' + escapeHtml(c) + '</option>'; }).join('');
+    if (cats.indexOf(current) !== -1) sel.value = current;
+
+    var dl = document.getElementById('categorySuggestions');
+    dl.innerHTML = cats.map(function(c) { return '<option value="' + escapeHtml(c) + '">'; }).join('');
+  }
+
+  function escapeHtml(str) {
+    var div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  function getFiltered() {
+    var q = document.getElementById('searchInput').value.trim().toLowerCase();
+    var cat = document.getElementById('categoryFilter').value;
+    var sort = document.getElementById('sortSelect').value;
+
+    var list = items.filter(function(i) {
+      var matchesQ = !q || i.name.toLowerCase().indexOf(q) !== -1 || i.sku.toLowerCase().indexOf(q) !== -1;
+      var matchesCat = !cat || i.category === cat;
+      var matchesStatus = !activeStatus || statusOf(i) === activeStatus;
+      return matchesQ && matchesCat && matchesStatus;
+    });
+
+    list.sort(function(a, b) {
+      if (sort === 'name') return a.name.localeCompare(b.name);
+      if (sort === 'qty-asc') return a.qty - b.qty;
+      if (sort === 'qty-desc') return b.qty - a.qty;
+      if (sort === 'value-desc') return (b.qty * b.price) - (a.qty * a.price);
+      return 0;
+    });
+
+    return list;
+  }
+
+  function render() {
+    refreshCategoryOptions();
+    var list = getFiltered();
+    var tbody = document.getElementById('tableBody');
+    var empty = document.getElementById('emptyState');
+
+    if (list.length === 0) {
+      tbody.innerHTML = '';
+      empty.style.display = 'block';
+    } else {
+      empty.style.display = 'none';
+      tbody.innerHTML = list.map(rowHtml).join('');
+    }
+
+    // stats over ALL items, not just filtered
+    var totalSkus = items.length;
+    var lowCount = items.filter(function(i) { return statusOf(i) !== 'ok'; }).length;
+    var totalValue = items.reduce(function(sum, i) { return sum + i.qty * i.price; }, 0);
+
+    document.getElementById('statTotal').textContent = totalSkus;
+    document.getElementById('statLow').textContent = lowCount;
+    document.getElementById('statValue').textContent = money(totalValue);
+
+    attachRowHandlers();
+  }
+
+  function rowHtml(item) {
+    var st = statusOf(item);
+    var rowClass = st === 'low' ? 'low-row' : (st === 'out' ? 'out-row' : '');
+    var dotClass = st;
+    var lineValue = item.qty * item.price;
+    return '' +
+      '<tr class="' + rowClass + '" data-id="' + item.id + '">' +
+        '<td class="name"><span class="status-dot ' + dotClass + '"></span>' + escapeHtml(item.name) +
+          '<span class="sku">' + escapeHtml(item.sku) + '</span></td>' +
+        '<td><span class="cat-tag">' + escapeHtml(item.category) + '</span></td>' +
+        '<td class="num">' + money(item.price) + '</td>' +
+        '<td class="num qty">' +
+          '<div class="qty-cell">' +
+            '<button class="stepper" data-action="dec" aria-label="Decrease quantity">−</button>' +
+            '<span class="qty-val">' + item.qty + '</span>' +
+            '<button class="stepper" data-action="inc" aria-label="Increase quantity">+</button>' +
+          '</div>' +
+        '</td>' +
+        '<td class="num">' + item.reorder + '</td>' +
+        '<td class="num">' + money(lineValue) + '</td>' +
+        '<td>' +
+          '<div class="row-actions">' +
+            '<button class="icon-btn" data-action="edit">Edit</button>' +
+            '<button class="icon-btn danger" data-action="delete">Delete</button>' +
+          '</div>' +
+        '</td>' +
+      '</tr>';
+  }
+
+  function attachRowHandlers() {
+    var rows = document.querySelectorAll('#tableBody tr');
+    rows.forEach(function(row) {
+      var id = row.getAttribute('data-id');
+      row.querySelectorAll('button[data-action]').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          var action = btn.getAttribute('data-action');
+          var item = items.find(function(i) { return i.id === id; });
+          if (!item) return;
+          if (action === 'inc') { item.qty += 1; saveItems(); render(); }
+          else if (action === 'dec') { item.qty = Math.max(0, item.qty - 1); saveItems(); render(); }
+          else if (action === 'edit') { openEdit(item); }
+          else if (action === 'delete') { deleteItem(item); }
+        });
+      });
+    });
+  }
+
+  function deleteItem(item) {
+    if (!confirm('Remove "' + item.name + '" from the ledger?')) return;
+    items = items.filter(function(i) { return i.id !== item.id; });
+    saveItems();
+    render();
+    showToast('Removed ' + item.name);
+  }
+
+  function openAdd() {
+    editingId = null;
+    document.getElementById('modalTitle').textContent = 'Add item';
+    document.getElementById('saveBtn').textContent = 'Save item';
+    document.getElementById('itemForm').reset();
+    document.getElementById('fQty').value = 0;
+    document.getElementById('fReorder').value = 5;
+    document.getElementById('fPrice').value = '0.00';
+    document.getElementById('formErr').textContent = '';
+    openModal();
+  }
+
+  function openEdit(item) {
+    editingId = item.id;
+    document.getElementById('modalTitle').textContent = 'Edit item';
+    document.getElementById('saveBtn').textContent = 'Save changes';
+    document.getElementById('fName').value = item.name;
+    document.getElementById('fSku').value = item.sku;
+    document.getElementById('fCategory').value = item.category;
+    document.getElementById('fQty').value = item.qty;
+    document.getElementById('fReorder').value = item.reorder;
+    document.getElementById('fPrice').value = item.price.toFixed(2);
+    document.getElementById('formErr').textContent = '';
+    openModal();
+  }
+
+  function openModal() {
+    document.getElementById('overlay').classList.add('open');
+    setTimeout(function() { document.getElementById('fName').focus(); }, 30);
+  }
+  function closeModal() {
+    document.getElementById('overlay').classList.remove('open');
+  }
+
+  function handleSubmit(e) {
+    e.preventDefault();
+    var name = document.getElementById('fName').value.trim();
+    var sku = document.getElementById('fSku').value.trim().toUpperCase();
+    var category = document.getElementById('fCategory').value.trim();
+    var qty = parseInt(document.getElementById('fQty').value, 10);
+    var reorder = parseInt(document.getElementById('fReorder').value, 10);
+    var price = parseFloat(document.getElementById('fPrice').value);
+    var errEl = document.getElementById('formErr');
+
+    if (!name || !sku || !category) { errEl.textContent = 'Fill in name, SKU, and category.'; return; }
+    if (isNaN(qty) || qty < 0) { errEl.textContent = 'Quantity must be zero or more.'; return; }
+    if (isNaN(reorder) || reorder < 0) { errEl.textContent = 'Reorder threshold must be zero or more.'; return; }
+    if (isNaN(price) || price < 0) { errEl.textContent = 'Unit price must be zero or more.'; return; }
+
+    var dupe = items.find(function(i) { return i.sku === sku && i.id !== editingId; });
+    if (dupe) { errEl.textContent = 'That SKU is already in use by "' + dupe.name + '".'; return; }
+
+    if (editingId) {
+      var item = items.find(function(i) { return i.id === editingId; });
+      item.name = name; item.sku = sku; item.category = category;
+      item.qty = qty; item.reorder = reorder; item.price = price;
+      showToast('Saved changes to ' + name);
+    } else {
+      items.push({ id: uid(), name: name, sku: sku, category: category, qty: qty, reorder: reorder, price: price });
+      showToast('Added ' + name);
+    }
+
+    saveItems();
+    closeModal();
+    render();
+  }
+
+  function init() {
+    loadItems();
+    render();
+
+    document.getElementById('addBtn').addEventListener('click', openAdd);
+    document.getElementById('cancelBtn').addEventListener('click', closeModal);
+    document.getElementById('overlay').addEventListener('click', function(e) {
+      if (e.target === this) closeModal();
+    });
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') closeModal();
+    });
+    document.getElementById('itemForm').addEventListener('submit', handleSubmit);
+
+    document.getElementById('searchInput').addEventListener('input', render);
+    document.getElementById('categoryFilter').addEventListener('change', render);
+    document.getElementById('sortSelect').addEventListener('change', render);
+
+    document.querySelectorAll('#statusChips .chip').forEach(function(chip) {
+      chip.addEventListener('click', function() {
+        document.querySelectorAll('#statusChips .chip').forEach(function(c) { c.classList.remove('active'); });
+        chip.classList.add('active');
+        activeStatus = chip.getAttribute('data-status');
+        render();
+      });
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', init);
+})();
+</script>
+</body>
+</html>
